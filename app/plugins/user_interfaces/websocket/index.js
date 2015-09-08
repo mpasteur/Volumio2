@@ -64,13 +64,13 @@ function InterfaceWebUI (context) {
 				});
 		});
 
-		connWebSocket.on('removeQueueItem', function (nIndex) {
+		connWebSocket.on('removeItemFromQueue', function (nIndex) {
 			selfConnWebSocket = this;
 
 			var timeStart = Date.now();
 			self.logStart('Client requests remove Volumio queue item')
 				.then(function () {
-					return self.commandRouter.volumioRemoveQueueItem.call(self.commandRouter, nIndex);
+					return self.commandRouter.volumioRemoveItemFromQueue.call(self.commandRouter, nIndex);
 				})
 				.fail(libFast.bind(self.pushError, self))
 				.done(function () {
@@ -78,13 +78,13 @@ function InterfaceWebUI (context) {
 				});
 		});
 
-		connWebSocket.on('addQueueUids', function (arrayUids) {
+		connWebSocket.on('addLibraryUidsToQueue', function (arrayUids) {
 			selfConnWebSocket = this;
 
 			var timeStart = Date.now();
-			self.logStart('Client requests add Volumio queue items')
+			self.logStart('Client requests add Volumio library items to queue')
 				.then(function () {
-					return self.commandRouter.volumioAddQueueUids.call(self.commandRouter, arrayUids);
+					return self.commandRouter.volumioAddLibraryUidsToQueue.call(self.commandRouter, arrayUids);
 				})
 				.fail(libFast.bind(self.pushError, self))
 				.done(function () {
@@ -136,11 +136,11 @@ function InterfaceWebUI (context) {
 			var timeStart = Date.now();
 			self.logStart('Client requests get playlist index')
 				.then(function () {
-					return self.commandRouter.volumioGetPlaylistIndex.call(self.commandRouter, sUid);
+					return self.commandRouter.volumioGetPlaylistListing.call(self.commandRouter, sUid);
 				})
 				.then(function (objBrowseData) {
 					if (objBrowseData) {
-						return self.pushPlaylistIndex.call(self, objBrowseData, selfConnWebSocket);
+						return self.pushPlaylistListing.call(self, objBrowseData, selfConnWebSocket);
 					}
 				})
 				.fail(libFast.bind(self.pushError, self))
@@ -249,6 +249,28 @@ function InterfaceWebUI (context) {
 			var timeStart = Date.now();
 			self.logStart('Client requests import of playlists')
 				.then(libFast.bind(self.commandRouter.volumioImportServicePlaylists, self.commandRouter))
+				.fail(libFast.bind(self.pushError, self))
+				.done(function () {
+					return self.logDone(timeStart);
+				});
+		});
+
+		connWebSocket.on('addLibraryUidsToPlaylist', function (arrayUids, sPlaylistUid) {
+			var timeStart = Date.now();
+			self.logStart('Client adds items to playlist')
+				.then(function() {
+					self.commandRouter.volumioAddLibraryUidsToPlaylist.call(self.commandRouter, arrayUids, sPlaylistUid)
+				})
+				.fail(libFast.bind(self.pushError, self))
+				.done(function () {
+					return self.logDone(timeStart);
+				});
+		});
+
+		connWebSocket.on('removeItemsFromPlaylist', function (arrayItems, sPlaylistUid) {
+			var timeStart = Date.now();
+			self.logStart('Client removes item from playlist')
+				.then(libFast.bind(self.commandRouter.volumioRemovePlaylistItems, self.commandRouter))
 				.fail(libFast.bind(self.pushError, self))
 				.done(function () {
 					return self.logDone(timeStart);
@@ -366,9 +388,9 @@ InterfaceWebUI.prototype.pushLibraryListing = function(browsedata, connWebSocket
 }
 
 // Push the playlist view
-InterfaceWebUI.prototype.pushPlaylistIndex = function(browsedata, connWebSocket) {
+InterfaceWebUI.prototype.pushPlaylistListing = function(browsedata, connWebSocket) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'InterfaceWebUI::pushPlaylistIndex');
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'InterfaceWebUI::pushPlaylistListing');
 
 	// If a specific client is given, push to just that client
 	if (connWebSocket) {

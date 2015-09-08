@@ -95,7 +95,8 @@ function CoreMusicLibrary (commandRouter) {
 			'albums': ['albumuids', '#', {'name': 'name', 'uid': 'uid'}],
 			'artists': ['artistuids', '#', {'name': 'name', 'uid': 'uid'}],
 			'tracknumber': 'tracknumber',
-			'date': 'date'
+			'date': 'date',
+			'duation': 'duration'
 		}
 	];
 
@@ -117,34 +118,69 @@ CoreMusicLibrary.prototype.getListing = function(sUid, objOptions) {
 	//TODO implement use of nEntries and nOffset for paging of results
 	var arrayPath = objOptions.datapath;
 	var sSortBy = objOptions.sortby;
+	var objReturn = {
+		navigation: {
+			prev: {
+				uri: ''
+			}
+		},
+		list: []
+	};
 
 	var objRequested = self.getLibraryObject(sUid);
-	if (!sSortBy && arrayPath.length === 0) {
-		return objRequested;
-	} else if (!sSortBy) {
-		return self.getObjectInfo(objRequested, arrayPath);
+
+	if (!sSortBy) {
+		objReturn.list = self.getObjectInfo(objRequested, arrayPath);
+		objReturn.navigation.prev.uri = sUid;
+		return libQ.resolve(objReturn);
 	} else if (arrayPath.length === 0) {
 		// TODO - return raw object?
 	} else {
 		// TODO - sort data before returning
-		return self.getObjectInfo(objRequested, arrayPath);
+		objReturn.list = self.getObjectInfo(objRequested, arrayPath);
+		objReturn.navigation.prev.uri = sUid;
+		return libQ.resolve(objReturn);
 	}
+
+	return libQ.reject('Sort options or path not recognized in request \"' + objOptions + '\"');
 }
 
 CoreMusicLibrary.prototype.getIndex = function(sUid) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreLibraryFS::getIndex');
-	return libQ.resolve(self.libraryIndex[sUid].children);
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreMusicLibrary::getIndex');
+
+	var objReturn = {
+		navigation: {
+			prev: {
+				uri: ''
+			}
+		},
+		currentobject: {
+			uid: ''
+		},
+		list: []
+	};
+
+	objReturn.list = self.libraryIndex[sUid].children;
+	objReturn.currentobject.uid = sUid;
+
+	return libQ.resolve(objReturn);
 }
 
-CoreMusicLibrary.prototype.addQueueUids = function(arrayUids) {
+CoreMusicLibrary.prototype.addLibraryUidsToQueue = function(arrayUids) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreMusicLibrary::addUidsToQueue');
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreMusicLibrary::addLibraryUidsToQueue');
 
+	self.commandRouter.addItemsToQueue(self.makeQueueItemArray(arrayUids));
+}
+
+CoreMusicLibrary.prototype.makeQueueItemArray = function(arrayUids) {
+	var self = this;
 	var arrayQueueItems = [];
 
 	libFast.map(arrayUids, function(sCurrentUid) {
 		var objCurrent = self.getLibraryObject(sCurrentUid);
+
 		if (objCurrent.type === 'track') {
 			arrayQueueItems.push(self.makeQueueItem(objCurrent));
 		} else {
@@ -156,7 +192,8 @@ CoreMusicLibrary.prototype.addQueueUids = function(arrayUids) {
 		}
 	});
 
-	self.commandRouter.addQueueItems(arrayQueueItems);
+	return arrayQueueItems;
+
 }
 
 CoreMusicLibrary.prototype.makeQueueItem = function(objTrack) {

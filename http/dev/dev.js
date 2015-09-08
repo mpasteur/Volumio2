@@ -6,6 +6,7 @@ var libraryHistory = new Array();
 var playlistHistory = new Array();
 var nLibraryHistoryPosition = 0;
 var nPlaylistHistoryPosition = 0;
+var sCurPlaylist = 'root';
 
 // Define button actions --------------------------------------------
 document.getElementById('button-volumioplay').onclick = function() {emitEvent('play', '');}
@@ -111,12 +112,12 @@ socket.on('pushPlaylistIndex', function(objBrowseData) {
 	playlistForward();
 //	printConsoleMessage('pushPlaylistIndex: ' + JSON.stringify(objBrowseData));
 });
-
+/*
 socket.on('pushPlaylistListing', function(objBrowseData) {
 	playlistHistory.splice(nPlaylistHistoryPosition + 1, playlistHistory.length - nPlaylistHistoryPosition - 1, objBrowseData);
 	playlistForward();
 });
-
+*/
 socket.on('printConsoleMessage', function(sMessage) {
 	printConsoleMessage(sMessage);
 });
@@ -221,11 +222,17 @@ function updatePlayerQueue(arrayQueue) {
 		var buttonRemove = document.createElement('button');
 		buttonRemove.appendChild(document.createTextNode('Remove'));
 		buttonRemove.className = 'button-itemaction';
-		buttonRemove.onclick = removeQueueItem(i);
+		buttonRemove.onclick = linkRemoveItemFromQueue(i);
+
+		var buttonAddToPlaylist = document.createElement('button');
+		buttonAddToPlaylist.appendChild(document.createTextNode('Add to Playlist'));
+		buttonAddToPlaylist.className = 'button-itemaction';
+		buttonAddToPlaylist.onclick = linkAddQueueItemsToPlaylist([i]);
 
 		var nodeSpan = document.createElement('span');
 		nodeSpan.appendChild(document.createTextNode(sText));
 		nodeSpan.appendChild(buttonRemove);
+		nodeSpan.appendChild(buttonAddToPlaylist);
 		nodeSpan.appendChild(document.createElement('br'));
 		nodeSpan.appendChild(document.createTextNode(sSubText));
 
@@ -248,15 +255,19 @@ function clearPlayQueue() {
 function updateBrowseView(objBrowseData) {
 	clearBrowseView();
 
+	var arrayLibraryListing = objBrowseData.list;
 	//printConsoleMessage(JSON.stringify(objBrowseData));
 
 	var nodeBrowseView = document.getElementById('browseview');
-	var arrayDataKeys = Object.keys(objBrowseData);
+	var arrayDataKeys = Object.keys(arrayLibraryListing);
 	for (i = 0; i < arrayDataKeys.length; i++) {
-		var curEntry = objBrowseData[arrayDataKeys[i]];
+		var curEntry = arrayLibraryListing[arrayDataKeys[i]];
 
 		var sText = curEntry.name;
 		var sSubText = '';
+		if ('type' in curEntry) {
+			sSubText = sSubText.concat(' [Type]: ' + curEntry.type + '');
+		}
 		if ('artists' in curEntry) {
 			sSubText = sSubText.concat(' [Artists]: ' + JSON.stringify(curEntry.artists));
 		}
@@ -308,11 +319,18 @@ function updateBrowseView(objBrowseData) {
 		if (bIsIndex) {
 			nodeLink.onclick = linkGetLibraryFilters(curEntry['uid']);
 		} else {
-			var buttonAdd = document.createElement('button');
-			buttonAdd.appendChild(document.createTextNode('Add'));
-			buttonAdd.className = 'button-itemaction';
-			buttonAdd.onclick = addQueueUids([curEntry['uid']]);
-			nodeSpan.appendChild(buttonAdd);
+			var buttonAddToQueue = document.createElement('button');
+			buttonAddToQueue.appendChild(document.createTextNode('Add to Queue'));
+			buttonAddToQueue.className = 'button-itemaction';
+			buttonAddToQueue.onclick = linkAddLibraryUidsToQueue([curEntry['uid']]);
+			nodeSpan.appendChild(buttonAddToQueue);
+
+			var buttonAddToPlaylist = document.createElement('button');
+			buttonAddToPlaylist.appendChild(document.createTextNode('Add to Playlist'));
+			buttonAddToPlaylist.className = 'button-itemaction';
+			buttonAddToPlaylist.onclick = linkAddLibraryUidsToPlaylist([curEntry['uid']]);
+			nodeSpan.appendChild(buttonAddToPlaylist);
+
 			nodeLink.onclick = linkGetLibraryListing(objBrowseParameters);
 		}
 
@@ -337,20 +355,48 @@ function linkGetLibraryFilters(sUid) {
 function updatePlaylistView(objPlaylistData) {
 	clearPlaylistView();
 
+	var arrayPlaylistListing = objPlaylistData.list;
+	sCurrentPlaylist = objPlaylistData.currentobject.uid;
 	//printConsoleMessage(JSON.stringify(objBrowseData));
 
 	var nodePlaylistView = document.getElementById('playlistview');
-	var arrayDataKeys = Object.keys(objPlaylistData);
+	var arrayDataKeys = Object.keys(arrayPlaylistListing);
 	for (i = 0; i < arrayDataKeys.length; i++) {
-		var curEntry = objPlaylistData[arrayDataKeys[i]];
+		var curEntry = arrayPlaylistListing[arrayDataKeys[i]];
 
 		var sText = curEntry.name;
 		var sSubText = '';
+		if ('type' in curEntry) {
+			sSubText = sSubText.concat(' [Type]: ' + curEntry.type + '');
+		}
+		if ('service' in curEntry) {
+			sSubText = sSubText.concat(' [Service]: ' + curEntry.service + '');
+		}
+		if ('uri' in curEntry) {
+			sSubText = sSubText.concat(' [Uri]: ' + curEntry.uri + '');
+		}
+		if ('artists' in curEntry) {
+			sSubText = sSubText.concat(' [Artists]: ' + JSON.stringify(curEntry.artists));
+		}
+		if ('albums' in curEntry) {
+			sSubText = sSubText.concat(' [Albums]: ' + JSON.stringify(curEntry.albums) + '');
+		}
+		if ('tracknumber' in curEntry) {
+			sSubText = sSubText.concat(' [Tracknumber]: ' + JSON.stringify(curEntry.tracknumber));
+		}
+		if ('date' in curEntry) {
+			sSubText = sSubText.concat(' [Date]: ' + JSON.stringify(curEntry.date) + '');
+		}
 
 		var buttonAdd = document.createElement('button');
-		buttonAdd.appendChild(document.createTextNode('Add'));
+		buttonAdd.appendChild(document.createTextNode('Add to Queue'));
 		buttonAdd.className = 'button-itemaction';
-		buttonAdd.onclick = addQueueUids([curEntry['uid']]);
+		buttonAdd.onclick = linkAddPlaylistUidsToQueue([curEntry['uid']]);
+
+		var buttonRemove = document.createElement('button');
+		buttonRemove.appendChild(document.createTextNode('Remove'));
+		buttonRemove.className = 'button-itemaction';
+		buttonRemove.onclick = linkRemoveItemFromQueue(i, curEntry['uid']);
 
 		var nodeLink = document.createElement('a');
 		nodeLink.setAttribute('href', '#');
@@ -359,7 +405,8 @@ function updatePlaylistView(objPlaylistData) {
 
 		var nodeSpan = document.createElement('span');
 		nodeSpan.appendChild(nodeLink);
-		//nodeSpan.appendChild(buttonAdd);
+		nodeSpan.appendChild(buttonRemove);
+		nodeSpan.appendChild(buttonAdd);
 		nodeSpan.appendChild(document.createElement('br'));
 		nodeSpan.appendChild(document.createTextNode(sSubText));
 
@@ -375,15 +422,39 @@ function linkGetPlaylistIndex(sUid) {
 	}
 }
 
-function addQueueUids(arrayUids) {
+function linkAddLibraryUidsToQueue(arrayUids) {
 	return function() {
-		emitEvent('addQueueUids', arrayUids);
+		emitEvent('addLibraryUidsToQueue', arrayUids);
 	}
 }
 
-function removeQueueItem(nIndex) {
+function linkAddQueueItemsToPlaylist(arrayItems) {
 	return function() {
-		emitEvent('removeQueueItem', nIndex);
+		emitEvent('addQueueItemsToPlaylist', arrayItems);
+	}
+}
+
+function linkAddLibraryUidsToPlaylist(arrayUids) {
+	return function() {
+		emitEvent('addLibraryUidsToPlaylist', arrayUids, sCurPlaylist);
+	}
+}
+
+function linkAddPlaylistUidsToQueue(arrayUids) {
+	return function() {
+		emitEvent('addPlaylistUidsToQueue', arrayUids, sCurPlaylist);
+	}
+}
+
+function linkRemoveItemFromQueue(nIndex) {
+	return function() {
+		emitEvent('removeItemFromQueue', nIndex);
+	}
+}
+
+function linkRemoveItemFromPlaylist(nIndex, sUid) {
+	return function() {
+		emitEvent('removeItemFromPlaylist', nIndex, sUid);
 	}
 }
 

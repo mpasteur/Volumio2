@@ -55,9 +55,9 @@ CorePlayQueue.prototype.getTrackBlock = function(nStartIndex) {
 };
 
 // Removes one item from the queue
-CorePlayQueue.prototype.removeQueueItem = function(nIndex) {
+CorePlayQueue.prototype.removeItemFromQueue = function(nIndex) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CorePlayQueue::removeQueueItem');
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CorePlayQueue::removeItemFromQueue');
 
 	return self.queueReady
 		.then(function() {
@@ -67,9 +67,9 @@ CorePlayQueue.prototype.removeQueueItem = function(nIndex) {
 };
 
 // Add one item to the queue
-CorePlayQueue.prototype.addQueueItems = function(arrayItems) {
+CorePlayQueue.prototype.addItemsToQueue = function(arrayItems) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CorePlayQueue::addQueueItems');
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CorePlayQueue::addItemsToQueue');
 
 	return self.queueReady
 		.then(function() {

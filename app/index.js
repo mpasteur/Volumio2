@@ -8,6 +8,8 @@ function CoreCommandRouter (server) {
 	// This fixed variable will let us refer to 'this' object at deeper scopes
 	var self = this;
 
+	self.server = server;
+
 	// Start plugins
 	self.pluginManager = new (require(__dirname+'/pluginmanager.js'))(self, server);
 	self.pluginManager.loadPlugins();
@@ -23,8 +25,8 @@ function CoreCommandRouter (server) {
 	// Start the volume controller
 	self.volumeControl = new (require('./volumecontrol.js'))(self);
 
-	// Start the playlist FS
-	self.playlistFS = new (require('./playlistfs.js'))(self);
+	// Start the playlist manager
+	self.playlistManager = new (require('./playlistmanager.js'))(self);
 
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'BOOT COMPLETED');
 
@@ -37,7 +39,7 @@ CoreCommandRouter.prototype.volumioPlay = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioPlay');
 
-	return self.stateMachine.play();
+	return self.stateMachine.play.call(self.stateMachine);
 }
 
 // Volumio Pause
@@ -45,7 +47,7 @@ CoreCommandRouter.prototype.volumioPause = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioPause');
 
-	return self.stateMachine.pause();
+	return self.stateMachine.pause.call(self.stateMachine);
 }
 
 // Volumio Stop
@@ -53,7 +55,7 @@ CoreCommandRouter.prototype.volumioStop = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioStop');
 
-	return self.stateMachine.stop();
+	return self.stateMachine.stop.call(self.stateMachine);
 }
 
 // Volumio Previous
@@ -61,7 +63,7 @@ CoreCommandRouter.prototype.volumioPrevious = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioPrevious');
 
-	return self.stateMachine.previous();
+	return self.stateMachine.previous.call(self.stateMachine);
 }
 
 // Volumio Next
@@ -69,7 +71,7 @@ CoreCommandRouter.prototype.volumioNext = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioNext');
 
-	return self.stateMachine.next();
+	return self.stateMachine.next.call(self.stateMachine);
 }
 
 // Volumio Get State
@@ -77,7 +79,7 @@ CoreCommandRouter.prototype.volumioGetState = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioGetState');
 
-	return self.stateMachine.getState();
+	return self.stateMachine.getState.call(self.stateMachine);
 }
 
 // Volumio Get Queue
@@ -85,43 +87,31 @@ CoreCommandRouter.prototype.volumioGetQueue = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioGetQueue');
 
-	return self.stateMachine.getQueue();
+	return self.stateMachine.getQueue.call(self.stateMachine);
 }
 
 // Volumio Remove Queue Item
-CoreCommandRouter.prototype.volumioRemoveQueueItem = function(nIndex) {
+CoreCommandRouter.prototype.volumioRemoveItemFromQueue = function(nIndex) {
 	var self = this;
-	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioRemoveQueueItem');
+	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioRemoveItemFromQueue');
 
-	return self.stateMachine.removeQueueItem(nIndex);
-}
-
-// Volumio Set Volume
-CoreCommandRouter.prototype.volumiosetvolume = function(VolumeInteger) {
-	var self = this;
-	return self.volumeControl.alsavolume(VolumeInteger);
-}
-
-// Volumio Update Volume
-CoreCommandRouter.prototype.volumioupdatevolume = function(vol) {
-	var self = this;
-	return self.stateMachine.updateVolume(vol);
-}
-
-// Volumio Retrieve Volume
-CoreCommandRouter.prototype.volumioretrievevolume = function(vol) {
-	var self = this;
-	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioRetrievevolume');
-
-	return self.volumeControl.retrievevolume();
+	return self.stateMachine.removeItemFromQueue.call(self.stateMachine, nIndex);
 }
 
 // Volumio Add Queue Uids
-CoreCommandRouter.prototype.volumioAddQueueUids = function(arrayUids) {
+CoreCommandRouter.prototype.volumioAddLibraryUidsToQueue = function(arrayUids) {
 	var self = this;
-	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioAddQueueUids');
+	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioAddLibraryUidsToQueue');
 
-	return self.musicLibrary.addQueueUids(arrayUids);
+	return self.musicLibrary.addLibraryUidsToQueue.call(self.musicLibrary, arrayUids);
+}
+
+// Volumio Add Playlist Uids
+CoreCommandRouter.prototype.volumioAddLibraryUidsToPlaylist = function(arrayUids, sPlaylistUid) {
+	var self = this;
+	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioAddLibraryUidsToPlaylist');
+
+	return self.playlistManager.addLibraryUidsToPlaylist.call(self.playlistManager, arrayUids, sPlaylistUid);
 }
 
 // Volumio Rebuild Library
@@ -129,31 +119,31 @@ CoreCommandRouter.prototype.volumioRebuildLibrary = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioRebuildLibrary');
 
-	return self.musicLibrary.buildLibrary();
+	return self.musicLibrary.buildLibrary.call(self.musicLibrary);
 }
 
-// Volumio Get Library Index
+// Volumio Get Library Filters
 CoreCommandRouter.prototype.volumioGetLibraryFilters = function(sUid) {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioGetLibraryFilters');
 
-	return self.musicLibrary.getIndex(sUid);
+	return self.musicLibrary.getIndex.call(self.musicLibrary, sUid);
 }
 
-// Volumio Browse Library
+// Volumio Get Library Listing
 CoreCommandRouter.prototype.volumioGetLibraryListing = function(sUid, objOptions) {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioGetLibraryListing');
 
-	return self.musicLibrary.getListing(sUid, objOptions);
+	return self.musicLibrary.getListing.call(self.musicLibrary, sUid, objOptions);
 }
 
-// Volumio Get Playlist Index
-CoreCommandRouter.prototype.volumioGetPlaylistIndex = function(sUid) {
+// Volumio Get Playlist Listing
+CoreCommandRouter.prototype.volumioGetPlaylistListing = function(sUid) {
 	var self = this;
-	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioGetPlaylistIndex');
+	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioGetPlaylistListing');
 
-	return self.playlistFS.getIndex(sUid);
+	return self.playlistManager.getListing.call(self.playlistManager, sUid);
 }
 
 // Service Update Tracklist
@@ -163,6 +153,26 @@ CoreCommandRouter.prototype.serviceUpdateTracklist = function(sService) {
 
 	var thisPlugin = self.pluginManager.getPlugin.call(self.pluginManager, 'music_service', sService);
 	return thisPlugin.rebuildTracklist.call(thisPlugin);
+}
+
+// Volumio Set Volume
+CoreCommandRouter.prototype.volumiosetvolume = function(VolumeInteger) {
+	var self = this;
+	return self.volumeControl.alsavolume.call(self.volumeControl, VolumeInteger);
+}
+
+// Volumio Update Volume
+CoreCommandRouter.prototype.volumioupdatevolume = function(vol) {
+	var self = this;
+	return self.stateMachine.updateVolume.call(self.stateMachine, vol);
+}
+
+// Volumio Retrieve Volume
+CoreCommandRouter.prototype.volumioretrievevolume = function(vol) {
+	var self = this;
+	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioRetrievevolume');
+
+	return self.volumeControl.retrievevolume.call(self.volumeControl);
 }
 
 // Start WirelessScan
@@ -185,7 +195,7 @@ CoreCommandRouter.prototype.volumioImportServicePlaylists = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioImportServicePlaylists');
 
-	return self.playlistFS.importServicePlaylists();
+	return self.playlistManager.importServicePlaylists.call(self.playlistManager);
 }
 
 CoreCommandRouter.prototype.updateAllMetadata = function() {
@@ -265,7 +275,7 @@ CoreCommandRouter.prototype.servicePushState = function(state, sService) {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::servicePushState');
 
-	return self.stateMachine.syncState(state, sService);
+	return self.stateMachine.syncState.call(self.stateMachine, state, sService);
 }
 
 // Methods usually called by the music library ---------------------------------------------------------------------
@@ -285,20 +295,42 @@ CoreCommandRouter.prototype.getAllTracklists = function() {
 }
 
 // Volumio Add Queue Items
-CoreCommandRouter.prototype.addQueueItems = function(arrayItems) {
+CoreCommandRouter.prototype.addItemsToQueue = function(arrayItems) {
 	var self = this;
-	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::volumioAddQueueItems');
+	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::addItemsToQueue');
 
-	return self.stateMachine.addQueueItems(arrayItems);
+	return self.stateMachine.addItemsToQueue.call(self.stateMachine, arrayItems);
 }
 
+// Notifies clients that a change has occured in the music library
 CoreCommandRouter.prototype.notifyMusicLibraryUpdate = function() {
 	var self = this;
 	self.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreCommandRouter::notifyMusicLibraryUpdate');
 
-	// TODO Also push a notification to all clients.
-	//return self.musicLibrary.updateAllMetadata.call(self.metadataCache);
-	return null;
+	return libQ.all(
+		libFast.map(self.pluginManager.getPluginNames.call(self.pluginManager, 'user_interface'), function(sInterface) {
+			var thisInterface = self.pluginManager.getPlugin.call(self.pluginManager, 'user_interface', sInterface);
+
+			if(typeof thisInterface.notifyMusicLibraryUpdate === "function") {
+				return thisInterface.notifyMusicLibraryUpdate.call(thisInterface);
+			}
+		})
+	);
+}
+
+// Notifies clients that a change has occured in the playlist filesystem
+CoreCommandRouter.prototype.notifyPlaylistManagerUpdate = function() {
+	var self = this;
+
+	return libQ.all(
+		libFast.map(self.pluginManager.getPluginNames.call(self.pluginManager, 'user_interface'), function(sInterface) {
+			var thisInterface = self.pluginManager.getPlugin.call(self.pluginManager, 'user_interface', sInterface);
+
+			if(typeof thisInterface.notifyPlaylistManagerUpdate === "function") {
+				return thisInterface.notifyPlaylistManagerUpdate.call(thisInterface);
+			}
+		})
+	);
 }
 
 // Calls a service to fetch album art for a uri, possibly slow

@@ -48,19 +48,19 @@ CoreStateMachine.prototype.getQueue = function() {
 };
 
 // Remove one item from the queue
-CoreStateMachine.prototype.removeQueueItem = function(nIndex) {
+CoreStateMachine.prototype.removeItemFromQueue = function(nIndex) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreStateMachine::removeQueueItem');
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreStateMachine::removeItemFromQueue');
 
-	return self.playQueue.removeQueueItem(nIndex);
+	return self.playQueue.removeItemFromQueue(nIndex);
 };
 
 // Add array of items to queue
-CoreStateMachine.prototype.addQueueItems = function(arrayItems) {
+CoreStateMachine.prototype.addItemsToQueue = function(arrayItems) {
 	var self = this;
-	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreStateMachine::addQueueItems');
+	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'CoreStateMachine::addItemsToQueue');
 
-	return self.playQueue.addQueueItems(arrayItems);
+	return self.playQueue.addItemsToQueue(arrayItems);
 };
 
 // Volumio Play Command
