@@ -32,8 +32,12 @@ var processRequest=function (web,path) {
 
 		if(stats.isFile())
 		{
-			defer.resolve(path);
-			return defer.promise;
+			var fileSizeInBytes = stats["size"];
+			if(fileSizeInBytes>0)
+			{
+				defer.resolve(path);
+				return defer.promise;
+			}
 		}
 
 		/**
