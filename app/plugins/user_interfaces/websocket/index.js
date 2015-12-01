@@ -702,6 +702,32 @@ function InterfaceWebUI (context) {
 
 			});
 
+			connWebSocket.on('sleepalarm-sleep', function (data) {
+				selfConnWebSocket = this;
+
+				self.logStart('Client requests Volumio sleep. Enable : ' + data.enable)
+					.then(function () {
+				        var returnedData = self.commandRouter.executeOnPlugin('miscellanea', 'sleep-alarm', 'changeSleepState', data);
+				        returnedData.then(function (data) {
+					       selfConnWebSocket.emit('pushSleep', data);
+				        });
+          });
+
+			});
+
+			connWebSocket.on('sleepalarm-alarm', function (data) {
+				selfConnWebSocket = this;
+
+				self.logStart('Client requests Alarm. Enable : ' + data.enable)
+					.then(function () {
+				        var returnedData = self.commandRouter.executeOnPlugin('miscellanea', 'sleep-alarm', 'changeAlarmState', data);
+				        returnedData.then(function (data) {
+					       selfConnWebSocket.emit('pushAlarm', data);
+				        });
+          });
+
+			});
+
 			connWebSocket.on('getMultiroom', function (data) {
 				selfConnWebSocket = this;
 

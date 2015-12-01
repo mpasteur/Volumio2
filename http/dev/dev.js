@@ -26,6 +26,15 @@ document.getElementById('button-volumemute').onclick = function() {emitEvent('vo
 document.getElementById('button-volumeunmute').onclick = function() {emitEvent('volume', 'unmute');}
 document.getElementById('button-volumioimportplaylists').onclick = function() {emitEvent('importServicePlaylists', '');}
 
+document.getElementById('button-sleepalarm-sleep').onclick = function() {
+  emitEvent('sleepalarm-sleep', {enable:true});
+}
+document.getElementById('button-sleepalarm-sleep-stop').onclick = function() {
+  emitEvent('sleepalarm-sleep', {enable:false});
+}
+document.getElementById('button-sleepalarm-alarm-on').onclick = function() {emitEvent('sleepalarm-alarm', {enable:true});}
+document.getElementById('button-sleepalarm-alarm-off').onclick = function() {emitEvent('sleepalarm-alarm', {enable:false});}
+
 // Socket.io form
 var input1 = document.getElementById('form-ws-1');
 var input2 = document.getElementById('form-ws-2');
