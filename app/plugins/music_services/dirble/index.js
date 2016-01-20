@@ -332,6 +332,16 @@ ControllerDirble.prototype.listRadioCountries = function() {
 	self.getCountries(dirbleDefer.makeNodeResolver());
 	dirbleDefer.promise.then(function(data)
 	{
+	  //we sort datas alphabetically by name of country
+	  data.sort(
+			function(a, b){
+				if ( a.name < b.name )
+					return -1;
+				if ( a.name > b.name )
+					return 1;
+				return 0;
+			}
+		);
 		for(var i in data)
 		{
 			var category={
@@ -383,38 +393,44 @@ ControllerDirble.prototype.listRadioForCountry = function(uri) {
 
 	var paginationPromises=[];
 
-	for(var i=0;i<1;i++)
-	{
 		var dirbleDefer=libQ.defer();
-		self.getStationsForCountry(id,30,i,dirbleDefer.makeNodeResolver());
+		self.getStationsForCountry(id,30,1,dirbleDefer.makeNodeResolver());
 
-		paginationPromises.push(dirbleDefer);
-	}
-
-	libQ.all(paginationPromises)
-		.then(function(results){
-			console.log(results);
+	dirbleDefer.then(function(results){
+			//console.log(results);
+			var allDatas = [];
+			
 			for(var j in results)
 			{
-				var pageData=results[j];
-				//console.log(pageData);
+				allDatas = allDatas.concat(results[j]);
+			}
 
-				for(var k in pageData)
+				//we sort datas alphabetically by name of station
+				allDatas.sort(
+					function(a, b){
+						if ( a.name < b.name )
+							return -1;
+						if ( a.name > b.name )
+							return 1;
+						return 0;
+					}
+				);
+
+				for(var k in allDatas)
 				{
-					if( pageData[k].streams.length > 0 ){
+					if( allDatas[k].streams.length > 0 ){
 						var category={
 							service: 'dirble',
 							type: 'webradio',
-							title: pageData[k].name,
+							title: allDatas[k].name,
 							artist: '',
 							album: '',
 							icon: 'fa fa-microphone',
-							uri: pageData[k].streams[0].stream
+							uri: allDatas[k].streams[0].stream
 						};
 					response.navigation.list.push(category);
 					}
 				}
-			}
 
 			defer.resolve(response);
 		});
@@ -424,15 +440,27 @@ ControllerDirble.prototype.listRadioForCountry = function(uri) {
 
 ControllerDirble.prototype.getStationsForCountry = function(id,per_page,page,callback) {
 	var self=this;
-
+	var allPages = [];
+	
+	getAllStationsForCountry(id,per_page, page, callback);
+	
+	function getAllStationsForCountry(id,per_page,page,callback){
 	var Request = unirest.get('http://api.dirble.com/v2/countries/'+id+'/stations');
+	//console.log("query page "  + page + " for " + id);
 	Request.query({
 		token: self.config.get('api_token'),
 		page:page,
 		per_page:per_page
 	}).end(function (response) {
-		callback(null,response.body);
+	  //console.log(response.body.length);
+		if(response.body.length < per_page || page > 50){
+			callback(null,allPages);
+		}else{
+			allPages.push(response.body);
+			getAllStationsForCountry(id,per_page, ++page, callback);
+		}
 	});
+	}
 
 };
 
